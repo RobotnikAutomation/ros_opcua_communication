@@ -175,11 +175,27 @@ def getargarray(sample_req):
     return array
 
 
-def refresh_services(namespace_ros, server, servicesdict, idx, services_object_opc, excluded_services=[]):
-    rosservices = rosservice.get_service_list(namespace=namespace_ros)
 
+def getListOfServices (rosservices, list_allowed_services = None, list_excluded_services = None):
+    list_services = []
+    if(list_allowed_services==None or len(list_allowed_services)>0):
+        for service_name_ros in rosservices:
+            if service_name_ros in list_allowed_services:
+                list_services.append(service_name_ros)
+    elif (list_excluded_services==None or len(list_excluded_services)>0):
+        for service_name_ros in rosservices:
+            if service_name_ros not in list_excluded_services:
+                list_services.append(service_name_ros)
+    else:
+        for service_name_ros in rosservices:
+            list_services.append(service_name_ros)
+    return list_services
+
+def refresh_services(namespace_ros, server, servicesdict, idx, services_object_opc, excluded_services=[], allowed_services=[]):
+    rosservices = rosservice.get_service_list(namespace=namespace_ros)
+    list_services = getListOfServices(rosservices, allowed_services, excluded_services)
     for service_name_ros in rosservices:
-        if service_name_ros not in excluded_services:
+        if service_name_ros in list_services:
             try:
                 if service_name_ros not in servicesdict or servicesdict[service_name_ros] is None:
                     service = OpcUaROSService(server, services_object_opc, idx, service_name_ros,

@@ -265,14 +265,29 @@ def numberofsubscribers(nametolookfor, topicsDict):
         ret = 2
     return ret
 
+def getListOfTopics (ros_topics, list_allowed_topics = None, list_excluded_topics = None):
+    list_topics = []
+    if(list_allowed_topics==None or len(list_allowed_topics)>0):
 
-def refresh_topics_and_actions(namespace_ros, server, topicsdict, actionsdict, idx_topics, idx_actions, topics, actions, excluded_topics=[]):
+        for topic_name, topic_type in ros_topics:
+            if topic_name in list_allowed_topics:
+                list_topics.append(topic_name)
+    elif (list_excluded_topics==None or len(list_excluded_topics)>0):
+        for topic_name, topic_type in ros_topics:
+            if topic_name not in list_excluded_topics:
+                list_topics.append(topic_name)
+    else:
+        for topic_name, topic_type in ros_topics:
+            list_topics.append(topic_name)
+    return list_topics
+
+def refresh_topics_and_actions(namespace_ros, server, topicsdict, actionsdict, idx_topics, idx_actions, topics, actions, excluded_topics=[], allowed_topics=[]):
     ros_topics = rospy.get_published_topics(namespace_ros)
     rospy.logdebug(str(ros_topics))
     rospy.logdebug(str(rospy.get_published_topics('/move_base_simple')))
+    list_topics = getListOfTopics(ros_topics, allowed_topics, excluded_topics)
     for topic_name, topic_type in ros_topics:
-        
-        if topic_name not in excluded_topics:
+        if topic_name in list_topics:
             if topic_name not in topicsdict or topicsdict[topic_name] is None:
                 splits = topic_name.split('/')
                 #if "cancel" in splits[-1] or "result" in splits[-1] or "feedback" in splits[-1] or "goal" in splits[-1] or "status" in splits[-1]:

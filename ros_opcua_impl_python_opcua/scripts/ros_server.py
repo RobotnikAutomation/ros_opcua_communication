@@ -39,9 +39,30 @@ class ROSServer:
             rospy.get_param("/rosopcua/namespace")
         self.excluded_topics = []
         self.excluded_services = []
+        self.allowed_topics = []
+        self.allowed_services = []
+        if rospy.has_param('/rosopcua/allowed_topics'):
+            self.allowed_topics = rospy.get_param("/rosopcua/allowed_topics")
+            if isinstance(self.allowed_topics, list) and all(isinstance(elem, str) for elem in self.allowed_topics):
+                rospy.logwarn("The list of allowed topics are:")
+                for elem in self.allowed_topics:
+                    rospy.logwarn("-" + elem)
+            else:
+                self.allowed_topics = []
+        if rospy.has_param('/rosopcua/allowed_services'):
+            self.allowed_services = rospy.get_param("/rosopcua/allowed_services")
+            if isinstance(self.allowed_services, list) and all(isinstance(elem, str) for elem in self.allowed_services):
+                rospy.logwarn("The list of allowed services are:")
+                for elem in self.allowed_services:
+                    rospy.logwarn("-" + elem)
+            else:
+                self.allowed_services = []
         if rospy.has_param('/rosopcua/excluded_topics'):
             self.excluded_topics = rospy.get_param("/rosopcua/excluded_topics")
-            if isinstance(self.excluded_topics, list) and all(isinstance(elem, str) for elem in self.excluded_topics):
+            if len(self.allowed_topics)>0:
+                rospy.logwarn("A list of topics to connect to has been defined, so no exceptions can be defined.")
+                self.excluded_topics = []
+            elif isinstance(self.excluded_topics, list) and all(isinstance(elem, str) for elem in self.excluded_topics):
                 rospy.logwarn("The list of excluded topics are:")
                 for elem in self.excluded_topics:
                     rospy.logwarn("-" + elem)
@@ -50,7 +71,10 @@ class ROSServer:
                 rospy.logerr("The list of excluded topics is not well defined, no topic will be excluded.")
         if rospy.has_param('/rosopcua/excluded_services'):
             self.excluded_services = rospy.get_param("/rosopcua/excluded_services")
-            if isinstance(self.excluded_services, list) and all(isinstance(elem, str) for elem in self.excluded_services):
+            if len(self.allowed_services)>0:
+                rospy.logwarn("A list of services to connect to has been defined, so no exceptions can be defined.")
+                self.excluded_services = []
+            elif isinstance(self.excluded_services, list) and all(isinstance(elem, str) for elem in self.excluded_services):
                 rospy.logwarn("The list of excluded services are:")
                 for elem in self.excluded_services:
                     rospy.logwarn("-" + elem)
@@ -81,9 +105,10 @@ class ROSServer:
         actions_object = objects.add_object(idx_actions, "ROS_Actions")
         while not rospy.is_shutdown():
             # ros_topics starts a lot of publisher/subscribers, might slow everything down quite a bit.
-            ros_services.refresh_services(self.namespace_ros, self, self.servicesDict, idx_services, services_object, self.excluded_services)
+            ros_services.refresh_services(self.namespace_ros, self, self.servicesDict, idx_services, services_object, 
+                                          self.excluded_services, self.allowed_services)
             ros_topics.refresh_topics_and_actions(self.namespace_ros, self, self.topicsDict, self.actionsDict,
-                                                  idx_topics, idx_actions, topics_object, actions_object, self.excluded_topics)
+                                                  idx_topics, idx_actions, topics_object, actions_object, self.excluded_topics, self.allowed_topics)
             # Don't clog cpu
             time.sleep(60)
         self.server.stop()
