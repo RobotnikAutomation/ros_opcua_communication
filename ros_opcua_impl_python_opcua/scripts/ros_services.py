@@ -175,20 +175,21 @@ def getargarray(sample_req):
     return array
 
 
-def refresh_services(namespace_ros, server, servicesdict, idx, services_object_opc):
+def refresh_services(namespace_ros, server, servicesdict, idx, services_object_opc, excluded_services=[]):
     rosservices = rosservice.get_service_list(namespace=namespace_ros)
 
     for service_name_ros in rosservices:
-        try:
-            if service_name_ros not in servicesdict or servicesdict[service_name_ros] is None:
-                service = OpcUaROSService(server, services_object_opc, idx, service_name_ros,
-                                          rosservice.get_service_class_by_name(service_name_ros))
-                servicesdict[service_name_ros] = service
-        except (rosservice.ROSServiceException, rosservice.ROSServiceIOException) as e:
+        if service_name_ros not in excluded_services:
             try:
-                rospy.logerr("Error when trying to refresh services", e)
-            except TypeError as e2:
-                rospy.logerr("Error when logging an Exception, can't convert everything to string")
+                if service_name_ros not in servicesdict or servicesdict[service_name_ros] is None:
+                    service = OpcUaROSService(server, services_object_opc, idx, service_name_ros,
+                                            rosservice.get_service_class_by_name(service_name_ros))
+                    servicesdict[service_name_ros] = service
+            except (rosservice.ROSServiceException, rosservice.ROSServiceIOException) as e:
+                try:
+                    rospy.logerr("Error when trying to refresh services", e)
+                except TypeError as e2:
+                    rospy.logerr("Error when logging an Exception, can't convert everything to string")
     # use extra iteration as to not get "dict changed during iteration" errors
     tobedeleted = []
     rosservices = rosservice.get_service_list()

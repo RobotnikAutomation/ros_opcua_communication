@@ -34,7 +34,29 @@ def own_rosnode_cleanup():
 
 class ROSServer:
     def __init__(self):
-        self.namespace_ros = rospy.get_param("/rosopcua/namespace")
+        self.namespace_ros = "/"
+        if rospy.has_param("/rosopcua/namespace"):
+            rospy.get_param("/rosopcua/namespace")
+        self.excluded_topics = []
+        self.excluded_services = []
+        if rospy.has_param('/rosopcua/excluded_topics'):
+            self.excluded_topics = rospy.get_param("/rosopcua/excluded_topics")
+            if isinstance(self.excluded_topics, list) and all(isinstance(elem, str) for elem in self.excluded_topics):
+                rospy.logwarn("The list of excluded topics are:")
+                for elem in self.excluded_topics:
+                    rospy.logwarn("-" + elem)
+            else:
+                self.excluded_topics = []
+                rospy.logerr("The list of excluded topics is not well defined, no topic will be excluded.")
+        if rospy.has_param('/rosopcua/excluded_services'):
+            self.excluded_services = rospy.get_param("/rosopcua/excluded_services")
+            if isinstance(self.excluded_services, list) and all(isinstance(elem, str) for elem in self.excluded_services):
+                rospy.logwarn("The list of excluded services are:")
+                for elem in self.excluded_services:
+                    rospy.logwarn("-" + elem)
+            else:
+                self.excluded_services = []
+                rospy.logerr("The list of excluded services is not well defined, no service will be excluded.")
         self.topicsDict = {}
         self.servicesDict = {}
         self.actionsDict = {}
@@ -59,9 +81,9 @@ class ROSServer:
         actions_object = objects.add_object(idx_actions, "ROS_Actions")
         while not rospy.is_shutdown():
             # ros_topics starts a lot of publisher/subscribers, might slow everything down quite a bit.
-            ros_services.refresh_services(self.namespace_ros, self, self.servicesDict, idx_services, services_object)
+            ros_services.refresh_services(self.namespace_ros, self, self.servicesDict, idx_services, services_object, self.excluded_services)
             ros_topics.refresh_topics_and_actions(self.namespace_ros, self, self.topicsDict, self.actionsDict,
-                                                  idx_topics, idx_actions, topics_object, actions_object)
+                                                  idx_topics, idx_actions, topics_object, actions_object, self.excluded_topics)
             # Don't clog cpu
             time.sleep(60)
         self.server.stop()

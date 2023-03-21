@@ -346,7 +346,11 @@ class OpcUaROSAction:
 def get_correct_name(topic_name):
     rospy.logdebug("getting correct name for: " + str(topic_name))
     splits = topic_name.split('/')
-    return string.join(splits[0:-1], '/')
+    correct_name = "/".join(splits[:-1])
+    rospy.logwarn(correct_name)
+    return correct_name
+    #rospy.logwarn(str(splits))
+    #return string.join(splits[0:-1], '/')
 
 
 def getargarray(goal_class):

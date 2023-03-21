@@ -266,37 +266,43 @@ def numberofsubscribers(nametolookfor, topicsDict):
     return ret
 
 
-def refresh_topics_and_actions(namespace_ros, server, topicsdict, actionsdict, idx_topics, idx_actions, topics, actions):
+def refresh_topics_and_actions(namespace_ros, server, topicsdict, actionsdict, idx_topics, idx_actions, topics, actions, excluded_topics=[]):
     ros_topics = rospy.get_published_topics(namespace_ros)
     rospy.logdebug(str(ros_topics))
     rospy.logdebug(str(rospy.get_published_topics('/move_base_simple')))
     for topic_name, topic_type in ros_topics:
-        if topic_name not in topicsdict or topicsdict[topic_name] is None:
-            splits = topic_name.split('/')
-            if "cancel" in splits[-1] or "result" in splits[-1] or "feedback" in splits[-1] or "goal" in splits[-1] or "status" in splits[-1]:
-                rospy.logdebug("Found an action: " + str(topic_name))
-                correct_name = ros_actions.get_correct_name(topic_name)
-                if correct_name not in actionsdict:
-                    try:
-                        rospy.loginfo("Creating Action with name: " + correct_name)
-                        actionsdict[correct_name] = ros_actions.OpcUaROSAction(server,
-                                                                               actions,
-                                                                               idx_actions,
-                                                                               correct_name,
-                                                                               get_goal_type(correct_name),
-                                                                               get_feedback_type(correct_name))
-                    except (ValueError, TypeError, AttributeError) as e:
-                        print(e)
-                        rospy.logerr("Error while creating Action Objects for Action " + topic_name)
-
-            else:
-                # rospy.loginfo("Ignoring normal topics for debugging...")
+        
+        if topic_name not in excluded_topics:
+            if topic_name not in topicsdict or topicsdict[topic_name] is None:
+                splits = topic_name.split('/')
+                #if "cancel" in splits[-1] or "result" in splits[-1] or "feedback" in splits[-1] or "goal" in splits[-1] or "status" in splits[-1]:
+                #    rospy.logdebug("Found an action: " + str(topic_name))
+                #    correct_name = ros_actions.get_correct_name(topic_name)
+                #    if correct_name not in actionsdict:
+                #        try:
+                #            rospy.loginfo("Creating Action with name: " + correct_name)
+                #            actionsdict[correct_name] = ros_actions.OpcUaROSAction(server,
+                #                                                                   actions,
+                #                                                                   idx_actions,
+                #                                                                   correct_name,
+                #                                                                   get_goal_type(correct_name),
+                #                                                                   get_feedback_type(correct_name))
+                #        except (ValueError, TypeError, AttributeError) as e:
+                #            print(e)
+                #            rospy.logerr("Error while creating Action Objects for Action " + topic_name)
+                #
+                #else:
+                    # rospy.loginfo("Ignoring normal topics for debugging...")
+                    #topic = OpcUaROSTopic(server, topics, idx_topics, topic_name, topic_type)
+                    #topicsdict[topic_name] = topic
                 topic = OpcUaROSTopic(server, topics, idx_topics, topic_name, topic_type)
                 topicsdict[topic_name] = topic
-        elif numberofsubscribers(topic_name, topicsdict) <= 1 and "rosout" not in topic_name:
-            topicsdict[topic_name].recursive_delete_items(server.server.get_node(ua.NodeId(topic_name, idx_topics)))
-            del topicsdict[topic_name]
-            ros_server.own_rosnode_cleanup()
+            elif numberofsubscribers(topic_name, topicsdict) <= 1 and "rosout" not in topic_name:
+                topicsdict[topic_name].recursive_delete_items(server.server.get_node(ua.NodeId(topic_name, idx_topics)))
+                del topicsdict[topic_name]
+                ros_server.own_rosnode_cleanup()
+        else:
+            rospy.logwarn("Excluded topic: " + topic_name)
 
     ros_topics = rospy.get_published_topics(namespace_ros)
     # use to not get dict changed during iteration errors
