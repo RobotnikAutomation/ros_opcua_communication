@@ -86,7 +86,7 @@ class ROSServer:
         self.actionsDict = {}
         rospy.init_node("rosopcua")
         self.server = Server()
-        self.server.set_endpoint("opc.tcp://0.0.0.0:21554/")
+        self.server.set_endpoint("opc.tcp://0.0.0.0:4840/")
         self.server.set_server_name("ROS ua Server")
         self.server.start()
         # setup our own namespaces, this is expected

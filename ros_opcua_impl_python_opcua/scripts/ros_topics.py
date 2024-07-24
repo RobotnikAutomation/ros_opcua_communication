@@ -317,7 +317,7 @@ def refresh_topics_and_actions(namespace_ros, server, topicsdict, actionsdict, i
                 del topicsdict[topic_name]
                 ros_server.own_rosnode_cleanup()
         else:
-            rospy.logwarn("Excluded topic: " + topic_name)
+            rospy.logwarn_once("Excluded topic: " + topic_name)
 
     ros_topics = rospy.get_published_topics(namespace_ros)
     # use to not get dict changed during iteration errors
